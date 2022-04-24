@@ -1,8 +1,8 @@
 require("dotenv").config();
 const PostgresConnectionStringParser = require("pg-connection-string");
 
-const databaseUrl = process.env.DATABASE_URL
-
+// const databaseUrl = process.env.DATABASE_URL
+const databaseUrl = 'postgresql://postgres:postgres@localhost:5434/postgres'
 
 const connectionOptions = PostgresConnectionStringParser.parse(databaseUrl);
 
