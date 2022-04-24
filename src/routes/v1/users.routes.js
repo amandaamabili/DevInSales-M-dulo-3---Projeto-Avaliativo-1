@@ -6,6 +6,7 @@ const usersRoutes = express.Router();
 
 usersRoutes.post("/users", onlyCanAccessWith([WRITE]), UserController.create);
 usersRoutes.post("/session", UserController.session);
+// usersRoutes.post("/test", UserController.test);
 usersRoutes.get("/users", onlyCanAccessWith([READ]), UserController.index);
 
 usersRoutes.delete(
