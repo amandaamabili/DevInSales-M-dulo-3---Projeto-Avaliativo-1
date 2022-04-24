@@ -5,9 +5,8 @@ RUN npm install --quiet
 COPY . .
 ENV  DATABASE_URL=postgresql://postgres:postgres@localhost:5432/postgres
 ENV  NODE_ENV=development
-ENV  DATABASE_URL=postgresql://postgres:postgres@localhost:5432/postgres
-ENV  PORT=8080
+ENV  PORT=9000
 
-EXPOSE 8080
+EXPOSE 9000
 
 CMD [ "npm", "run", "start"]

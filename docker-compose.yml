@@ -10,6 +10,8 @@ services:
       - '5434:5432'
     volumes: 
       - db:/var/lib/postgresql/data
+    networks:
+      - app-db-network
       
   app:
     build:
@@ -18,11 +20,13 @@ services:
     depends_on:
       - db
     ports:
-      - '9000:8080'
+      - '9000:9000'
+    networks:
+      - app-db-network
     environment:
-      DATABASE_URL: 'postgresql://postgres:postgres@localhost:5432/postgres'
+      DATABASE_URL: 'postgresql://postgres:postgres@db:5432/postgres'
       NODE_ENV: development
-      PORT: 8080
+      PORT: 9000
 
     links:
       - db
@@ -31,3 +35,5 @@ services:
 volumes:
   db:
     driver: local
+networks:
+  app-db-network:
