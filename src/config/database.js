@@ -1,7 +1,7 @@
 require("dotenv").config();
 const PostgresConnectionStringParser = require("pg-connection-string");
 
-const databaseUrl = 'postgresql://postgres:postgres@5434/postgres';
+const databaseUrl = 'postgresql://postgres:postgres@5432/postgres';
 const connectionOptions = PostgresConnectionStringParser.parse(databaseUrl);
 
 module.exports = {
