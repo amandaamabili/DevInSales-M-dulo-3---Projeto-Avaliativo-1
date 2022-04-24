@@ -40,7 +40,8 @@ module.exports = {
           }
         }
       */
-      return res.status(201).send({ response: user.id });
+        return res.status(201).send({ response: user });
+
     } catch (error) {
       const message = validateErrors(error);
       /*
