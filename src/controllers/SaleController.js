@@ -1,4 +1,6 @@
 const { literal } = require('sequelize');
+const logger = require('../config/logger');
+
 const { decode } = require("jsonwebtoken");
 const { validateErrors, daysToDelivery } = require('../utils/functions');
 
@@ -70,7 +72,7 @@ module.exports = {
     */
     const { user_id } = req.params
     const { buyer_id, dt_sale } = req.body
-
+    logger.info(req.url + '- body: ' + JSON.stringify(req.body))    
     try {
       if (dt_sale.length < 10) throw new Error('Formato de data inválido')
       if (!buyer_id) throw new Error("Precisa existir um comprador")
@@ -130,7 +132,11 @@ module.exports = {
     try {
       const sale_id = req.params.sale_id
 
+      logger.info("Checking the API status: Everything is OK");
+
       if (!sale_id) {
+        
+       logger.error("Não foi encontrado um ID")
         return res.status(400).send({ message: 'É necessário passar o ID de vendas' })
       }
 
@@ -166,6 +172,8 @@ module.exports = {
 
 
       if (!sale) {
+        logger.error("Não existe venda para este ID", 55562)
+
         return res.status(404).send({ message: 'Não existe venda para este ID' })
       }
       const productIdList = sale.products.map(p => p.product_id)
