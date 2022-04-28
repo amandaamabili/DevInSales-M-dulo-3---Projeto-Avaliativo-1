@@ -20,6 +20,8 @@ module.exports = {
            } 
        } */
         try {
+            logger.info(`Iniciando a requisição. Request: ${req.url} `);
+
             const { description } = req.body
             await Permission.create({ description })
             /*
@@ -29,9 +31,11 @@ module.exports = {
                 }
             }
             */
+            logger.info('Request: '+ req.url + ' Requisição executada com sucesso! Payload: ' + JSON.stringify(message));
             return res.status(200).send({ message: 'Permissão criado com sucesso.' })
         } catch (error) {
             const message = validateErrors(error)
+            logger.error(`Desculpe, houve um erro sério, não conseguimos concluir a requisição. Request ${req.url} ${JSON.stringify(message)} . CodeError: ${27010}`);
             return res.status(400).send(message)
         }
     }

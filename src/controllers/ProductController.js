@@ -11,6 +11,7 @@ const {
 
 module.exports = {
   async index(req, res) {
+
     /* #swagger.tags = ['Produto']
     #swagger.description = 'Endpoint para buscar produtos conforme critério query params. Caso a busca seja feita sem os parâmetros, o endpoint irá retornar todos os produtos cadastrados. Nesse endpoint o usuário deve ter permissão READ.'
     #swagger.parameters['name'] = {
@@ -33,12 +34,18 @@ module.exports = {
   } */
 
     try {
+      logger.info(`Iniciando a requisição. Request: ${req.url} `);
+
       const { name, price_min, price_max } = req.query;
 
       const products = await indexProductService(name, price_min, price_max);
 
-      if (products.length === 0) return res.status(204).send();
+      if (products.length === 0) {
+        logger.error("Não existe produto. CodeError: " + 26002);
 
+        return res.status(204).send();
+      }
+      logger.info('Request: '+ req.url + ' Requisição executada com sucesso! Payload: ' + JSON.stringify(products));
       return res.status(200).send({ products });
 
       /* #swagger.responses[200] = { 
@@ -48,6 +55,7 @@ module.exports = {
 
     } catch (error) {
       const message = validateErrors(error);
+      logger.error(`Desculpe, houve um erro sério, não conseguimos concluir a requisição. Request ${req.url} ${JSON.stringify(message)} . CodeError: ${26003}`);
       return res.status(400).send(message);
     }
   },
@@ -65,6 +73,8 @@ module.exports = {
 
 
     try {
+      logger.info(`Iniciando a requisição. Request: ${req.url} `);
+
       const newProduct = req.body;
 
       const product = await storeProductService(newProduct);
@@ -72,7 +82,7 @@ module.exports = {
               schema: { $ref: "#/definitions/ResProduct" },
               description: "Produto criado com sucesso!" 
        } */
-
+       logger.info('Request: '+ req.url + ' Requisição executada com sucesso! Payload: ' + JSON.stringify(product));
       return res.status(200).send({
         message: "Produto criado com sucesso!",
         novoProduto: {
@@ -82,6 +92,7 @@ module.exports = {
       });
     } catch (error) {
       const message = validateErrors(error);
+      logger.error(`Desculpe, houve um erro sério, não conseguimos concluir a requisição. Request ${req.url} ${JSON.stringify(message)} . CodeError: ${26004}`);
       return res.status(400).send(message);
     }
   },
