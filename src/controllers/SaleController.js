@@ -13,11 +13,18 @@ const Product = require("../models/Product");
 const Address = require('../models/Address');
 const Delivery = require('../models/Deliveries');
 const State = require('../models/State');
+const Tracing = require("@sentry/tracing");
+const Sentry = require("@sentry/node");
 
 
 
 module.exports = {
   async createBuy(req, res) {
+
+    const transaction = Sentry.startTransaction({
+      op: "Vendas",
+      name: "Endpoint para criar uma venda.",
+    });
     // #swagger.tags = ['Vendas']
     // #swagger.description = 'Endpoint para criar uma venda.'
     /* #swagger.parameters['obj'] = {
@@ -36,7 +43,7 @@ module.exports = {
 
     try {
 
-      logger.info('Iniciando a requisição. Request: '+ req.url + '  Body: ' + JSON.stringify(req.body));
+      logger.info('Iniciando a requisição. Request: ' + req.url + '  Body: ' + JSON.stringify(req.body));
 
       if (!Number(seller_id)) {
         logger.error("Seller_id deve ser um número. CodeError: " + 28001);
@@ -48,36 +55,39 @@ module.exports = {
         throw new Error('Precisa enviar o user_id');
       }
 
-      if (dt_sale.length < 10){
+      if (dt_sale.length < 10) {
         logger.error("Formato de data inválido. CodeError: " + 28006);
         throw new Error('Formato de data inválido');
-      } 
+      }
 
-      if (new Date(dt_sale) == 'Invalid Date'){
+      if (new Date(dt_sale) == 'Invalid Date') {
         logger.error("Formato de data inválido. CodeError: " + 28007);
         throw new Error('Formato de data inválido')
-      } 
+      }
 
       const result = await Sale.create({
         seller_id: (seller_id) ? seller_id : null,
         buyer_id: user_id,
         dt_sale: dt_sale
       })
+      transaction.finish();
+      logger.info('Request: ' + req.url + ' Requisição executada com sucesso! Payload: ' + JSON.stringify(result));
 
-      logger.info('Request: '+ req.url + ' Requisição executada com sucesso! Payload: ' + JSON.stringify(result));
       return res.status(201).send({ 'created': "id-" + result.id })
 
     } catch (error) {
+      Sentry.captureException(error);
+      transaction.finish();
       if (error.message.includes('sales_seller_id_fkey')) {
-
         logger.error("Seller_id inexistente. CodeError: " + 28008);
 
         return res.status(404).send({ message: "seller_id inexistente" })
       }
-      if (error.message.includes('sales_buyer_id_fkey')){
+
+      if (error.message.includes('sales_buyer_id_fkey')) {
 
         logger.error("Buyer_id inexistente. CodeError: " + 28009);
-       return res.status(404).send({ message: "buyer_id inexistente" })  
+        return res.status(404).send({ message: "buyer_id inexistente" })
       }
 
       if (error.message.includes('invalid input syntax')) {
@@ -86,12 +96,15 @@ module.exports = {
         return res.status(400).send({ message: "User_id em formato inválido" });
       }
       logger.error(`Desculpe, houve um erro sério, não conseguimos concluir a requisição. Request ${req.url} ${JSON.stringify(error)} . CodeError: ${28011}`);
-      
       res.status(400).send({ message: error.message });
     }
 
   },
   async createSale(req, res) {
+    const transaction = Sentry.startTransaction({
+      op: "Vendas",
+      name: "Endpoint para criar uma venda",
+    });
     // #swagger.tags = ['Vendas']
     // #swagger.description = 'Endpoint para criar uma venda.'
     /* #swagger.parameters['obj'] = {
@@ -108,19 +121,19 @@ module.exports = {
     const { user_id } = req.params;
     const { buyer_id, dt_sale } = req.body;
 
-    logger.info('Iniciando a requisição. Request: '+ req.url + '  Body: ' + JSON.stringify(req.body))    
+    logger.info('Iniciando a requisição. Request: ' + req.url + '  Body: ' + JSON.stringify(req.body))
 
     try {
-      if (dt_sale.length < 10){
+      if (dt_sale.length < 10) {
         logger.error("Formato de data inválido. CodeError: " + 28012);
 
         throw new Error('Formato de data inválido')
       }
-      if (!buyer_id){
+      if (!buyer_id) {
         logger.error("Precisa existir um comprador. CodeError: " + 28013);
 
         throw new Error("Precisa existir um comprador")
-      } 
+      }
       if (new Date(dt_sale) == 'Invalid Date') {
         logger.error("Formato de data inválido. CodeError: " + 28014);
         throw new Error('Formato de data inválido')
@@ -131,26 +144,28 @@ module.exports = {
         buyer_id: buyer_id,
         dt_sale: dt_sale
       })
+      transaction.finish();
 
-      logger.info('Request: '+ req.url + ' Requisição executada com sucesso! Payload: ' + JSON.stringify(result));
+      logger.info('Request: ' + req.url + ' Requisição executada com sucesso! Payload: ' + JSON.stringify(result));
 
       return res.status(201).send({ 'created': "id-" + result.id })
 
     } catch (error) {
-
-      if (error.message.includes('sales_seller_id_fkey')){
+      Sentry.captureException(error);
+      transaction.finish();
+      if (error.message.includes('sales_seller_id_fkey')) {
         logger.error("seller_id inexistente. CodeError: " + 28015);
         return res.status(404).send({ message: "seller_id inexistente" })
-      } 
+      }
       if (error.message.includes('sales_buyer_id_fkey')) {
         logger.error("buyer_id inexistente. CodeError: " + 28016);
         return res.status(404).send({ message: "buyer_id inexistente" })
       }
 
-      if (error.message.includes('invalid input syntax')){
+      if (error.message.includes('invalid input syntax')) {
         logger.error("User_id em formato inválido. CodeError: " + 28017);
         return res.status(400).send({ message: "User_id em formato inválido" })
-      } 
+      }
 
       logger.error(`Desculpe, houve um erro sério, não conseguimos concluir a requisição. Request ${req.url} ${JSON.stringify(error)} . CodeError: ${28018}`);
       res.status(400).send({ message: error.message })
@@ -159,6 +174,11 @@ module.exports = {
 
 
   async showSaler(req, res) {
+
+    const transaction = Sentry.startTransaction({
+      op: "Vendas",
+      name: "Endpoint que buscar as vendas do usuario.",
+    });
     // #swagger.tags = [' Vendas ']
     // #swagger.description = 'Endpoint que buscar as vendas do usuario.'
 
@@ -186,17 +206,24 @@ module.exports = {
         logger.error("Este usuario não possui vendas. CodeError: " + 28020);
         return res.status(400).send({ message: "Este usuario não possui vendas!" });
       }
+      transaction.finish();
+      logger.info('Request: ' + req.url + ' Requisição executada com sucesso! Payload: ' + JSON.stringify(findSaler));
 
-      logger.info('Request: '+ req.url + ' Requisição executada com sucesso! Payload: ' + JSON.stringify(findSaler));
       return res.status(200).json(findSaler)
     } catch (error) {
-
       logger.error(`Desculpe, houve um erro sério, não conseguimos concluir a requisição. Request ${req.url} ${JSON.stringify(error)} . CodeError: ${28021}`);
+
+      Sentry.captureException(error);
+      transaction.finish();
       return res.status(400).send({ message: "Erro deconhecido!" })
     }
   },
 
   async showSaleById(req, res) {
+    const transaction = Sentry.startTransaction({
+      op: "Sale",
+      name: "Pega uma venda",
+    });
 
     try {
       const sale_id = req.params.sale_id
@@ -204,8 +231,8 @@ module.exports = {
       logger.info(`Iniciando a requisição. Request: ${req.url} `);
 
       if (!sale_id) {
-        
-       logger.error("É necessário passar um Id de vendas Error: " + 28000);
+
+        logger.error("É necessário passar um Id de vendas Error: " + 28000);
 
         return res.status(400).send({ message: 'É necessário passar o ID de vendas' })
       }
@@ -242,16 +269,15 @@ module.exports = {
 
 
       if (!sale) {
-       
         logger.error("Não existe venda para este ID. CodeError: " + 28004)
 
         return res.status(404).send({ message: 'Não existe venda para este ID' })
       }
       const productIdList = sale.products.map(p => p.product_id)
 
-      if(productIdList.length==0) {
+      if (productIdList.length == 0) {
         logger.warn('Não existe produto para esta venda');
-      } 
+      }
 
       const productNames = await Product.findAll({
         attributes: ['id', 'name'],
@@ -278,18 +304,24 @@ module.exports = {
         dt_sale: sale.dt_sale,
         products: productsWithName
       }
+      transaction.finish();
 
-      logger.info('Request: '+ req.url + '  Requisição executada com sucesso! Payload: ' + JSON.stringify(response))         
-       return res.status(200).json(response)
+      logger.info('Request: ' + req.url + '  Requisição executada com sucesso! Payload: ' + JSON.stringify(response))
+      return res.status(200).json(response)
 
     } catch (error) {
-      logger.error(`Desculpe, houve um erro sério, não conseguimos concluir a requisição. Request ${req.url} ${JSON.stringify(error)} . CodeError: ${28002}`)   
+      Sentry.captureException(error);
+      transaction.finish();
+      logger.error(`Desculpe, houve um erro sério, não conseguimos concluir a requisição. Request ${req.url} ${JSON.stringify(error)} . CodeError: ${28002}`)
       return res.status(500).json(error.message)
     }
   },
 
   async showSalesByBuyer(req, res) {
-
+    const transaction = Sentry.startTransaction({
+      op: "Vendas",
+      name: "Endpoint pra buscar as vendas do usuario pelo buyer_id.",
+    });
     // #swagger.tags = ['Vendas']
     // #swagger.description = 'Endpoint pra buscar as vendas do usuario pelo buyer_id.'
     const { user_id } = req.params;
@@ -314,17 +346,24 @@ module.exports = {
         logger.warn('No content');
         return res.status(204).json({ message: "no content" });
       }
+      transaction.finish();
 
-      logger.info('Request: '+ req.url + ' Requisição executada com sucesso! Payload: ' + JSON.stringify(salesData));
+      logger.info('Request: ' + req.url + ' Requisição executada com sucesso! Payload: ' + JSON.stringify(salesData));
       return res.status(200).json(salesData);
 
     } catch (error) {
+      Sentry.captureException(error);
+      transaction.finish();
       logger.error(`Desculpe, houve um erro sério, não conseguimos concluir a requisição já que não foi possível listar os dados das vendas. Request ${req.url} ${JSON.stringify(error)} . CodeError: ${28022}`);
       return res.status(404).json({ message: "erro ao listar dados de vendas" });
     }
   },
 
   async deliveries(req, res) {
+    const transaction = Sentry.startTransaction({
+      op: "Vendas",
+      name: "Endpoint pra buscar as entregas",
+    });
     // #swagger.tags = ['Vendas']
     // #swagger.description = 'Endpoint pra buscar as entregas.'
     /*  #swagger.parameters['obj'] = {
@@ -395,9 +434,13 @@ module.exports = {
         sale_id: sale_id,
         delivery_forecast: deliverydate
       })
-      logger.info('Request: '+ req.url + ' Requisição executada com sucesso! Payload: ' + JSON.stringify(deliveryDateResult));
+      transaction.finish();
+
+      logger.info('Request: ' + req.url + ' Requisição executada com sucesso! Payload: ' + JSON.stringify(deliveryDateResult));
       return res.status(200).json({ message: "Entrega agendada com sucesso" });
     } catch (error) {
+      Sentry.captureException(error);
+      transaction.finish();
       logger.error(`Desculpe, houve um erro sério, não conseguimos concluir a requisição. Request ${req.url} ${JSON.stringify(error)} . CodeError: ${28028}`);
       return res.status(400).json({ message: "Bad request" });
     }
@@ -405,6 +448,10 @@ module.exports = {
   },
 
   async saleMade(req, res) {
+    const transaction = Sentry.startTransaction({
+      op: "Vendas",
+      name: "Endpoint para registrar vendas de produtos.",
+    });
     // #swagger.auto = false
     // #swagger.tags = ['Vendas']
     // #swagger.description = '<h2>Endpoint para registrar vendas de produtos.</h2>'
@@ -436,7 +483,6 @@ module.exports = {
       const dt_sale = new Date();
       const buyer = await decode(req.headers.authorization);
       const buyer_id = buyer.userId;
-      
       if (!amount) {
         amount = 1;
       }
@@ -487,10 +533,12 @@ module.exports = {
           amount: amount,
         },
       });
-
-      logger.info('Request: '+ req.url + ' Requisição executada com sucesso! Payload: ' + JSON.stringify(productSale));
+      transaction.finish();
+      logger.info('Request: ' + req.url + ' Requisição executada com sucesso! Payload: ' + JSON.stringify(productSale));
       return res.status(201).json({ 'created': "id-" + productSale.id });
     } catch (error) {
+      Sentry.captureException(error);
+      transaction.finish();
       logger.error(`Desculpe, houve um erro sério, não conseguimos concluir a requisição. Request ${req.url} ${JSON.stringify(error)} . CodeError: ${28033}`);
       return res.status(400).send(error.message);
     }

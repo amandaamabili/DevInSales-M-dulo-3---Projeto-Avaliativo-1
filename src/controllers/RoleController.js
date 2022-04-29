@@ -1,11 +1,18 @@
 const Role = require("../models/Role");
 const Permission = require("../models/Permission");
 const { validateErrors } = require("../utils/functions");
+const Tracing = require("@sentry/tracing");
+const Sentry = require("@sentry/node");
 const logger = require('../config/logger');
 
 
 module.exports = {
   async index(req, res) {
+
+    const transaction = Sentry.startTransaction({
+      op: "Cargos e Permissões",
+      name: "Endpoint para criar um novo Cargo. Nesse endpoint o usuário deve ter cargo de OWNER.",
+    });
     /*
         #swagger.tags = ['Cargos e Permissões']
         #swagger.description = 'Endpoint para criar um novo Cargo. Nesse endpoint o usuário deve ter cargo de OWNER.'
@@ -32,16 +39,23 @@ module.exports = {
           },
         ],
       });
+      transaction.finish();
 
-      logger.info('Request: '+ req.url + ' Requisição executada com sucesso! Payload: ' + JSON.stringify(roles));
+      logger.info('Request: ' + req.url + ' Requisição executada com sucesso! Payload: ' + JSON.stringify(roles));
       return res.status(200).send({ roles });
     } catch (error) {
+      Sentry.captureException(error);
+      transaction.finish();
       const message = validateErrors(error);
       logger.error(`Desculpe, houve um erro sério, não conseguimos concluir a requisição. Request ${req.url} ${JSON.stringify(message)} . CodeError: ${24001}`);
       return res.status(400).send(message);
     }
   },
   async create(req, res) {
+    const transaction = Sentry.startTransaction({
+      op: "Cargos e Permissões",
+      name: "Endpoint para criar um novo Cargo. Nesse endpoint o usuário deve ter cargo de OWNER.",
+    });
     /*
       #swagger.tags = ['Cargos e Permissões']
       #swagger.description = 'Endpoint para criar um novo Cargo. Nesse endpoint o usuário deve ter cargo de OWNER.'
@@ -65,7 +79,7 @@ module.exports = {
 
       const { description, permissions } = req.body;
 
-      logger.info('Iniciando a requisição. Request: '+ req.url + '  Body: ' + JSON.stringify(req.body));
+      logger.info('Iniciando a requisição. Request: ' + req.url + '  Body: ' + JSON.stringify(req.body));
 
       if (!isNaN(parseInt(description))) {
         logger.warn(`Esta requisição não foi bem sucessida. CodeError: ${24002}`);
@@ -84,19 +98,25 @@ module.exports = {
           await role.addPermissions(permissionsEntity);
         }
       }
-         /* #swagger.responses[200] = { 
-            schema: { $ref: "#/definitions/ResRole" }
-        } */
-        logger.info('Request: '+ req.url + ' Requisição executada com sucesso! Payload: ' + JSON.stringify(role));
+      /* #swagger.responses[200] = { 
+         schema: { $ref: "#/definitions/ResRole" }
+     } */
+      transaction.finish();
+      logger.info('Request: ' + req.url + ' Requisição executada com sucesso! Payload: ' + JSON.stringify(role));
       return res.status(200).send({ message: "Cargo criado com sucesso." });
     } catch (error) {
-
+      Sentry.captureException(error);
+      transaction.finish();
       const message = validateErrors(error);
       logger.error(`Desculpe, houve um erro sério, não conseguimos concluir a requisição. Request ${req.url} ${JSON.stringify(error)} . CodeError: ${24003}`);
       return res.status(400).send(message);
     }
   },
   async addPermission(req, res) {
+    const transaction = Sentry.startTransaction({
+      op: "Cargos e Permissões",
+      name: "Endpoint para adicionar permissões um novo Cargo. Nesse endpoint o usuário deve ter cargo de OWNER.",
+    });
     /*
         #swagger.tags = ['Cargos e Permissões']
         #swagger.description = 'Endpoint para adicionar permissões um novo Cargo. Nesse endpoint o usuário deve ter cargo de OWNER.'
@@ -114,8 +134,8 @@ module.exports = {
     try {
       const { role_id } = req.params;
       const { permissions } = req.body;
-      logger.info('Request: '+ req.url + ' Requisição executada com sucesso! Payload: ' + JSON.stringify(response));
-      if (!permissions || permissions.lengh === 0){
+      logger.info('Request: ' + req.url + ' Requisição executada com sucesso! Payload: ' + JSON.stringify(response));
+      if (!permissions || permissions.lengh === 0) {
 
         logger.warn(`Esta requisição não foi bem sucessida. CodeError: ${24004}`);
         throw new Error("Permission não enviadas");
@@ -131,7 +151,7 @@ module.exports = {
         },
       });
 
-      if (!role){
+      if (!role) {
         logger.warn(`Este cargo não existe. CodeError: ${24005}`);
 
         throw new Error("Este cargo não existe.");
@@ -144,23 +164,26 @@ module.exports = {
         },
       });
 
-      if (permissionsData.length === 0){
+      if (permissionsData.length === 0) {
         logger.error("Permission enviadas não cadastradas. CodeError: " + 24006);
 
         throw new Error("Permission enviadas não cadastradas.");
       }
-        
 
       await role.addPermissions(permissionsData);
 
       /* #swagger.responses[200] = { 
                   schema: {"message": "Permissões vinculadas com sucesso."}
               } */
-              logger.info('Request: '+ req.url + ' Requisição executada com sucesso! Payload: ' + JSON.stringify(permissionsData));
+
+      transaction.finish();
+      logger.info('Request: ' + req.url + ' Requisição executada com sucesso! Payload: ' + JSON.stringify(permissionsData));
       return res
         .status(200)
         .send({ message: "Permissões vinculadas com sucesso." });
     } catch (error) {
+      Sentry.captureException(error);
+      transaction.finish();
       const message = validateErrors(error);
       logger.error(`Desculpe, houve um erro sério, não conseguimos concluir a requisição. Request ${req.url} ${JSON.stringify(message)} . CodeError: ${24007}`);
       return res.status(400).send(message);

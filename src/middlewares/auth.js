@@ -1,18 +1,37 @@
 const { verify } = require("jsonwebtoken");
 const Role = require("../models/Role");
-const { OWNER } = require('../utils/constants/roles')
+const { OWNER } = require('../utils/constants/roles');
+const logger = require('../config/logger');
+
+
+const Tracing = require("@sentry/tracing");
+const Sentry = require("@sentry/node");
 
 async function auth(req) {
+    const transaction = Sentry.startTransaction({
+    op: "auth",
+    name: "verifica se possui autorização",
+  });
   const { authorization } = req.headers;
   try {
+    logger.info(`Iniciando a requisição. Request: ${req.url} `);
+
+
     if (!authorization) {
-      throw Error;
+      logger.error("não possui autorização. CodeError: " + 22001);
+
+      throw Error("não possui autorização");
     }
     const user = verify(authorization, process.env.SECRET);
+    logger.info('Request: '+ req.url + ' Requisição executada com sucesso! Payload: ' + JSON.stringify(user));
+    transaction.finish();
     return user;
   } catch (error) {
+    Sentry.captureException(error);
+    transaction.finish();
+    logger.error(`Desculpe, houve um erro sério, não conseguimos concluir a requisição. Request ${req.url} ${JSON.stringify(message)} . CodeError: ${22002}`);
     return { message: "Você não tem autorização para este recurso." };
-  }
+  } 
 }
 
 function onlyCanAccessWith(permissionsCanAccess) {
