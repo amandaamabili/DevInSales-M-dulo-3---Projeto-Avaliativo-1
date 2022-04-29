@@ -3,6 +3,8 @@ const Product = require('../models/Product')
 const ProductsSales = require('../models/ProductsSales')
 const { Op } = require("sequelize");
 const { validateErrors } = require("../utils/functions");
+const logger = require('../config/logger');
+
 
 
 module.exports = {
@@ -49,6 +51,8 @@ module.exports = {
 } */
 
     try {
+      logger.info(`Iniciando a requisição. Request: ${req.url} `);
+
       const { sale_id, product_id, price } = req.params;
       const saleResult = await Sale.findByPk(sale_id)
       const productResult = await Product.findByPk(product_id)
@@ -61,14 +65,19 @@ module.exports = {
         }
       })
       if (!saleResult || !productResult) {
+        logger.error("id de Produto ou de Venda não existem. CodeError: " + 25001);
         return res.status(404).send({ message: "id de Produto ou de Venda não existem" });
 
       } else {
 
         if (productSaleResult[0].dataValues.product_id !== Number(product_id)) {
+          logger.error("Id do produto enviado não é compatível ao cadastrado na venda. CodeError: " + 25002);
           return res.status(400).send({ message: "Id do produto enviado não é compatível ao cadastrado na venda." });
+
         } else {
           if (price <= 0 || isNaN(price)) {
+            logger.error("Preço deve ser um número superior à zero. CodeError: " + 25003);
+
             return res.status(400).send({ message: "Preço deve ser um número superior à zero" });
           }
           const id = Number(productSaleResult[0].dataValues.id)
@@ -77,6 +86,8 @@ module.exports = {
             { unit_price: Number(price) },
             { where: { id: id } }
           )
+
+          logger.info('Request: '+ req.url + ' Requisição executada com sucesso! Payload: ' + JSON.stringify(result));
           return res.status(204).send();
 
         }
@@ -85,6 +96,7 @@ module.exports = {
 
     } catch (error) {
       const message = validateErrors(error);
+      logger.error(`Desculpe, houve um erro sério, não conseguimos concluir a requisição. Request ${req.url} ${JSON.stringify(error)} . CodeError: ${25004}`);
       return res.status(400).send(message);
     }
   },
@@ -128,6 +140,8 @@ module.exports = {
         description: 'Id de produto ou venda não existem'
 } */
     try {
+      logger.info(`Iniciando a requisição. Request: ${req.url} `);
+
       const { sale_id, product_id, amount } = req.params;
       const saleResult = await Sale.findByPk(sale_id)
       const productResult = await Product.findByPk(product_id)
@@ -140,14 +154,20 @@ module.exports = {
         }
       })
         if(!saleResult || !productResult){ //confere se id de Venda e de Produto existem no banco
+          logger.error("id de Produto ou de Venda não existem. CodeError: " + 25005);
+
         return res.status(404).send({ message: "id de Produto ou de Venda não existem" });
 
       }else{
 
         if(productSaleResult[0].dataValues.product_id!==Number(product_id)){ //confere se Produto repassado no Params é o mesmo cadastrado na Venda 
+          logger.error("Id do produto enviado não é compatível ao cadastrado na venda. CodeError: " + 25006);
+
           return res.status(400).send({message:"Id do produto enviado não é compatível ao cadastrado na venda."});
         }else {
           if(amount<=0||isNaN(amount)){ //confere se Produto repassado no Params é o mesmo cadastrado na Venda 
+            logger.error("Quantidade deve ser um número superior à zero. CodeError: " + 25007);
+
             return res.status(400).send({message:"Quantidade deve ser um número superior à zero"});
           }
           const id = Number(productSaleResult[0].dataValues.id)
@@ -156,7 +176,7 @@ module.exports = {
             {amount: Number(amount)},
             {where: {id: id}}
           )
-
+          logger.info('Request: '+ req.url + ' Requisição executada com sucesso! Payload: ' + JSON.stringify(result));
         return res.status(204).send();
         }
       }
@@ -164,6 +184,7 @@ module.exports = {
 
     } catch (error) {
       const message = validateErrors(error);
+      logger.error(`Desculpe, houve um erro sério, não conseguimos concluir a requisição. Request ${req.url} ${JSON.stringify(message)} . CodeError: ${25008}`);
       return res.status(400).send(message);
     }
   },

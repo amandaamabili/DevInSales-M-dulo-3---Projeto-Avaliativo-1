@@ -1,5 +1,7 @@
 const Permission = require('../models/Permission');
 const { validateErrors } = require('../utils/functions')
+const logger = require('../config/logger');
+
 
 module.exports = {
     async create(req, res) {

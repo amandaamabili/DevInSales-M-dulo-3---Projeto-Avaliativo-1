@@ -1,5 +1,7 @@
 const { validateErrors } = require("../utils/functions");
 const UserServices = require("../services/user.service");
+const logger = require('../config/logger');
+
 
 
 module.exports = {
@@ -26,6 +28,8 @@ module.exports = {
         */
     try {
       const { name, password, email, birth_date, roles } = req.body;
+      logger.info('Iniciando a requisição. Request: '+ req.url + '  Body: ' + JSON.stringify(req.body));
+
       const user = await UserServices.createUser(
         name,
         password,
@@ -40,6 +44,7 @@ module.exports = {
           }
         }
       */
+        logger.info('Request: '+ req.url + ' Requisição executada com sucesso! Payload: ' + JSON.stringify(user));
         return res.status(201).send({ response: user });
 
     } catch (error) {
@@ -51,6 +56,8 @@ module.exports = {
                 }
               }
             */
+             
+       logger.error(`Desculpe, houve um erro sério, não conseguimos concluir a requisição. Request ${req.url} ${JSON.stringify(message)} . CodeError: ${22011}`);
       return res.status(400).send(message);
     }
   },
@@ -80,13 +87,19 @@ module.exports = {
        */
     try {
       const { email, password } = req.body;
+      logger.info('Iniciando a requisição. Request: '+ req.url + '  Body: ' + JSON.stringify(req.body));
+
       const token = await UserServices.beginSession(email, password);
 
-      if (token.error) throw new Error(token.error);
-
+      if (token.error) {
+        logger.error("Houve um erro na geração do token. CodeError: " + 22012);
+        throw new Error(token.error);
+      }
+      logger.info('Request: '+ req.url + ' Requisição executada com sucesso! Payload: ' + JSON.stringify(token));
       return res.status(201).send({ token: token });
     } catch (error) {
       const message = validateErrors(error);
+      logger.error(`Desculpe, houve um erro sério, não conseguimos concluir a requisição. Request ${req.url} ${JSON.stringify(message)} . CodeError: ${22013}`);
       return res.status(400).send(message);
     }
   },
@@ -116,16 +129,20 @@ module.exports = {
     try {
       const { name, birth_date_min, birth_date_max } = req.query;
 
+      logger.info(`Iniciando a requisição. Request: ${req.url} `);
+
       const users = await UserServices.getUsers(
         name,
         birth_date_min,
         birth_date_max
       );
       if (users.error) {
+        logger.error("Houve um erro ao listar o usuário. CodeError: " + 22014);
         throw new Error(users.error);
       }
 
       if (users.length === 0) {
+        logger.warn(`Esta requisição não foi bem sucessida. CodeError: ${22015}`);
         return res.status(204).send();
       }
       /*
@@ -135,7 +152,7 @@ module.exports = {
         }
       }
       */
-
+      logger.info('Request: '+ req.url + ' Requisição executada com sucesso! Payload: ' + JSON.stringify(users));
       return res.status(200).send({ users });
     } catch (error) {
       const message = validateErrors(error);
@@ -146,7 +163,7 @@ module.exports = {
        }
      }
      */
-
+     logger.error(`Desculpe, houve um erro sério, não conseguimos concluir a requisição. Request ${req.url} ${JSON.stringify(message)} . CodeError: ${22016}`);
       return res.status(400).send(message);
     }
   },
@@ -182,15 +199,19 @@ module.exports = {
     */
     try {
       const { user_id } = req.params;
+      logger.info(`Iniciando a requisição. Request: ${req.url} `);
 
       const message = await UserServices.deleteUser(user_id);
 
       if (message.error) {
+        logger.error("Desculpe, houve um erro ao deletar. CodeError: " + 22018);
+
         throw new Error(message.error);
       }
-
+      logger.info('Request: '+ req.url + ' Requisição executada com sucesso! Payload: ' + JSON.stringify(message));
       return res.status(200).json({ message });
     } catch (error) {
+      logger.error(`Desculpe, houve um erro sério, não conseguimos concluir a requisição. Request ${req.url} ${JSON.stringify(error)} . CodeError: ${22019}`);
       return res.status(400).json({ error: error.message });
     }
   },

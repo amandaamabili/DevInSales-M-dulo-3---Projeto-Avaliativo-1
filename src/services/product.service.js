@@ -1,6 +1,8 @@
 const { Op } = require("sequelize");
 const Product = require("../models/Product");
 const ProductsSales = require("../models/ProductsSales");
+const logger = require('../config/logger');
+
 
 module.exports = {
   async indexProductService(name, price_min, price_max) {
@@ -14,6 +16,7 @@ module.exports = {
       : Number.MAX_SAFE_INTEGER;
 
     if (priceMax <= priceMin) {
+      logger.warn(`O preço máximo deve ser maior que o preço mínimo. CodeError: ${21023}`);
       throw new Error("O preço máximo deve ser maior que o preço mínimo.");
     }
     query.suggested_price = {
@@ -36,10 +39,13 @@ module.exports = {
       },
     });
     if (productExist) {
+      logger.warn(`Já existe um produto com esse mesmo nome. CodeError: ${21024}`);
       throw new Error("Já existe um produto com esse mesmo nome.");
     }
 
     if (newProduct.suggested_price <= 0) {
+      logger.warn(`O preço deve ser maior que zero. CodeError: ${21025}`);
+
       throw new Error("O preço deve ser maior que zero.");
     }
 
@@ -50,9 +56,11 @@ module.exports = {
     const nameWithNoSpaces = name ? name.trim() : null;
 
     if (!Number(id)) {
+      logger.warn(`O id deve ser um número. CodeError: ${21026}`);
       throw new Error("O id deve ser um número.");
     }
     if (!nameWithNoSpaces && !suggested_price) {
+      logger.warn(`Não foram enviados dados para atualização. CodeError: ${21027}`);
       throw new Error("Não foram enviados dados para atualização.");
     }
 
@@ -67,6 +75,7 @@ module.exports = {
       });
 
       if (name_Db) {
+        logger.error(`Já existe outro produto com o nome ${nameWithNoSpaces}. CodeError: ` + 21028);
         throw new Error(
           `Já existe outro produto com o nome ${nameWithNoSpaces}`
         );
@@ -74,11 +83,14 @@ module.exports = {
     }
 
     if (suggested_price <= 0) {
+      logger.error(`O preço sugerido deve ser maior que zero. CodeError: ` + 21029);
+
       throw new Error("O preço sugerido deve ser maior que zero.");
     }
 
     const productExist = await Product.findByPk(id);
     if (!productExist) {
+      logger.warn('Este produto não existe');
       return null;
     }
 
@@ -101,6 +113,8 @@ module.exports = {
 
   async countSalesByProductId(id) {
     if (!Number(id)) {
+      logger.error("O id deve ser um número. CodeError: " + 21030);
+
       throw new Error("O id deve ser um número.");
     }
     return await ProductsSales.count({

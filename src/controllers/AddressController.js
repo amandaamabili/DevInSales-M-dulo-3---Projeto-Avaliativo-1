@@ -4,6 +4,8 @@ const City = require('../models/City')
 const State = require('../models/State')
 const { validateErrors } = require('../utils/functions')
 const { Op } = require("sequelize");
+const logger = require('../config/logger');
+
 
 module.exports = {
 
