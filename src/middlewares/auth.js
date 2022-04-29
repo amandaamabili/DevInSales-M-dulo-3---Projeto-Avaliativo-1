@@ -2,17 +2,27 @@ const { verify } = require("jsonwebtoken");
 const Role = require("../models/Role");
 const { OWNER } = require('../utils/constants/roles')
 
+const Tracing = require("@sentry/tracing");
+const Sentry = require("@sentry/node");
+
 async function auth(req) {
+    const transaction = Sentry.startTransaction({
+    op: "auth",
+    name: "verifica se possui autorização",
+  });
   const { authorization } = req.headers;
   try {
     if (!authorization) {
-      throw Error;
+      throw Error("não possui autorização");
     }
     const user = verify(authorization, process.env.SECRET);
+    transaction.finish();
     return user;
   } catch (error) {
+    Sentry.captureException(error);
+    transaction.finish();
     return { message: "Você não tem autorização para este recurso." };
-  }
+  } 
 }
 
 function onlyCanAccessWith(permissionsCanAccess) {
