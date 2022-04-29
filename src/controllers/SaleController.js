@@ -1,5 +1,4 @@
 const { literal } = require('sequelize');
-
 const logger = require('../config/logger');
 
 const { decode } = require("jsonwebtoken");
