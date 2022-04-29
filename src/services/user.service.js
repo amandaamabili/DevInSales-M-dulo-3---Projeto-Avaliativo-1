@@ -11,6 +11,8 @@ const { sign } = require("jsonwebtoken");
 const bcrypt = require("bcrypt");
 const Role = require("../models/Role");
 const { READ, WRITE } = require("../utils/constants/permissions");
+const logger = require('../config/logger');
+
 
 module.exports = {
   async getUsers(name, birth_date_min, birth_date_max) {
@@ -23,8 +25,12 @@ module.exports = {
       if (birth_date_min) {
         const vefifyDateBirthMin = verifyDate(birth_date_min);
 
-        if (!vefifyDateBirthMin)
+        if (!vefifyDateBirthMin){
+          logger.error("Informe uma data em um formato válido dd/mm/yyyy. CodeError: " + 20001);
+
           throw new Error("Informe uma data em um formato válido dd/mm/yyyy");
+        }
+          
 
         const dateMin = stringToDate(birth_date_min);
         query.birth_date = {
@@ -33,8 +39,11 @@ module.exports = {
       }
       if (birth_date_max) {
         const vefifyDateBirthMax = verifyDate(birth_date_max);
-        if (!vefifyDateBirthMax)
+        if (!vefifyDateBirthMax){
+          logger.error("Informe uma data em um formato válido dd/mm/yyyy. CodeError: " + 20002);
           throw new Error("Informe uma data em um formato válido dd/mm/yyyy");
+        }
+          
         const dateMax = stringToDate(birth_date_max);
         query.birth_date = { ...query?.birth_date, [Op.lt]: dateMax };
       }
@@ -45,6 +54,7 @@ module.exports = {
       });
       return users;
     } catch (error) {
+      logger.error(`Desculpe, houve um erro sério, não conseguimos concluir a requisição. Request ${req.url} ${JSON.stringify(error)} . CodeError: ${20003}`);
       return { error: error.message };
     }
   },

@@ -21,6 +21,6 @@ app.use(routes)
 app.use('/api/v1/docs', swaggerUI.serve, swaggerUI.setup(swaggerFile))
 
 app.listen(PORT, () => {
-    logger.info('Server is running on port 9000');
+    logger.info('Servidor está rodando na porta 9000');
     console.log(`Executando na porta ${PORT}`)
 }) 

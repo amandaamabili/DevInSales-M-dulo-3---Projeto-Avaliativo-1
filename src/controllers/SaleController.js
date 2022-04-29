@@ -35,24 +35,59 @@ module.exports = {
     const { seller_id, dt_sale } = req.body
 
     try {
-      if (!Number(seller_id)) throw new Error('Seller_id deve ser um número')
-      if (!user_id) throw new Error('Precisa enviar o user_id')
-      if (dt_sale.length < 10) throw new Error('Formato de data inválido')
-      if (new Date(dt_sale) == 'Invalid Date') throw new Error('Formato de data inválido')
+
+      logger.info('Iniciando a requisição. Request: '+ req.url + '  Body: ' + JSON.stringify(req.body));
+
+      if (!Number(seller_id)) {
+        logger.error("Seller_id deve ser um número. CodeError: " + 28001);
+        throw new Error('Seller_id deve ser um número');
+      }
+
+      if (!user_id) {
+        logger.error("Precisa enviar o user_id. CodeError: " + 28005);
+        throw new Error('Precisa enviar o user_id');
+      }
+
+      if (dt_sale.length < 10){
+        logger.error("Formato de data inválido. CodeError: " + 28006);
+        throw new Error('Formato de data inválido');
+      } 
+
+      if (new Date(dt_sale) == 'Invalid Date'){
+        logger.error("Formato de data inválido. CodeError: " + 28007);
+        throw new Error('Formato de data inválido')
+      } 
 
       const result = await Sale.create({
         seller_id: (seller_id) ? seller_id : null,
         buyer_id: user_id,
         dt_sale: dt_sale
       })
+
+      logger.info('Request: '+ req.url + ' Requisição executada com sucesso! Payload: ' + JSON.stringify(result));
       return res.status(201).send({ 'created': "id-" + result.id })
 
     } catch (error) {
-      if (error.message.includes('sales_seller_id_fkey')) return res.status(404).send({ message: "seller_id inexistente" })
-      if (error.message.includes('sales_buyer_id_fkey')) return res.status(404).send({ message: "buyer_id inexistente" })
-      if (error.message.includes('invalid input syntax')) return res.status(400).send({ message: "User_id em formato inválido" })
+      if (error.message.includes('sales_seller_id_fkey')) {
 
-      res.status(400).send({ message: error.message })
+        logger.error("Seller_id inexistente. CodeError: " + 28008);
+
+        return res.status(404).send({ message: "seller_id inexistente" })
+      }
+      if (error.message.includes('sales_buyer_id_fkey')){
+
+        logger.error("Buyer_id inexistente. CodeError: " + 28009);
+       return res.status(404).send({ message: "buyer_id inexistente" })  
+      }
+
+      if (error.message.includes('invalid input syntax')) {
+
+        logger.error("User_id em formato inválido. CodeError: " + 28010);
+        return res.status(400).send({ message: "User_id em formato inválido" });
+      }
+      logger.error(`Desculpe, houve um erro sério, não conseguimos concluir a requisição. Request ${req.url} ${JSON.stringify(error)} . CodeError: ${28011}`);
+      
+      res.status(400).send({ message: error.message });
     }
 
   },
@@ -70,27 +105,54 @@ module.exports = {
             in:'path'
         }
     */
-    const { user_id } = req.params
-    const { buyer_id, dt_sale } = req.body
-    logger.info(req.url + '- body: ' + JSON.stringify(req.body))    
+    const { user_id } = req.params;
+    const { buyer_id, dt_sale } = req.body;
+
+    logger.info('Iniciando a requisição. Request: '+ req.url + '  Body: ' + JSON.stringify(req.body))    
+
     try {
-      if (dt_sale.length < 10) throw new Error('Formato de data inválido')
-      if (!buyer_id) throw new Error("Precisa existir um comprador")
-      if (new Date(dt_sale) == 'Invalid Date') throw new Error('Formato de data inválido')
+      if (dt_sale.length < 10){
+        logger.error("Formato de data inválido. CodeError: " + 28012);
+
+        throw new Error('Formato de data inválido')
+      }
+      if (!buyer_id){
+        logger.error("Precisa existir um comprador. CodeError: " + 28013);
+
+        throw new Error("Precisa existir um comprador")
+      } 
+      if (new Date(dt_sale) == 'Invalid Date') {
+        logger.error("Formato de data inválido. CodeError: " + 28014);
+        throw new Error('Formato de data inválido')
+      }
 
       const result = await Sale.create({
         seller_id: user_id,
         buyer_id: buyer_id,
         dt_sale: dt_sale
       })
+
+      logger.info('Request: '+ req.url + ' Requisição executada com sucesso! Payload: ' + JSON.stringify(result));
+
       return res.status(201).send({ 'created': "id-" + result.id })
 
     } catch (error) {
 
-      if (error.message.includes('sales_seller_id_fkey')) return res.status(404).send({ message: "seller_id inexistente" })
-      if (error.message.includes('sales_buyer_id_fkey')) return res.status(404).send({ message: "buyer_id inexistente" })
-      if (error.message.includes('invalid input syntax')) return res.status(400).send({ message: "User_id em formato inválido" })
+      if (error.message.includes('sales_seller_id_fkey')){
+        logger.error("seller_id inexistente. CodeError: " + 28015);
+        return res.status(404).send({ message: "seller_id inexistente" })
+      } 
+      if (error.message.includes('sales_buyer_id_fkey')) {
+        logger.error("buyer_id inexistente. CodeError: " + 28016);
+        return res.status(404).send({ message: "buyer_id inexistente" })
+      }
 
+      if (error.message.includes('invalid input syntax')){
+        logger.error("User_id em formato inválido. CodeError: " + 28017);
+        return res.status(400).send({ message: "User_id em formato inválido" })
+      } 
+
+      logger.error(`Desculpe, houve um erro sério, não conseguimos concluir a requisição. Request ${req.url} ${JSON.stringify(error)} . CodeError: ${28018}`);
       res.status(400).send({ message: error.message })
     }
   },
@@ -102,6 +164,8 @@ module.exports = {
 
     const { id } = req.params;
     try {
+      logger.info(`Iniciando a requisição. Request: ${req.url} `);
+
       const findUser = await User.findByPk(id);
 
       const findSaler = await User.findAll({
@@ -115,14 +179,19 @@ module.exports = {
       });
 
       if (!findUser) {
+        logger.error("Este usuario não existe!. CodeError: " + 28019);
         return res.status(400).send({ message: "Este usuario não existe!" });
       }
       if (findSaler.length === 0) {
+        logger.error("Este usuario não possui vendas. CodeError: " + 28020);
         return res.status(400).send({ message: "Este usuario não possui vendas!" });
       }
+
+      logger.info('Request: '+ req.url + ' Requisição executada com sucesso! Payload: ' + JSON.stringify(findSaler));
       return res.status(200).json(findSaler)
     } catch (error) {
 
+      logger.error(`Desculpe, houve um erro sério, não conseguimos concluir a requisição. Request ${req.url} ${JSON.stringify(error)} . CodeError: ${28021}`);
       return res.status(400).send({ message: "Erro deconhecido!" })
     }
   },
@@ -132,11 +201,12 @@ module.exports = {
     try {
       const sale_id = req.params.sale_id
 
-      logger.info("Checking the API status: Everything is OK");
+      logger.info(`Iniciando a requisição. Request: ${req.url} `);
 
       if (!sale_id) {
         
-       logger.error("Não foi encontrado um ID")
+       logger.error("É necessário passar um Id de vendas Error: " + 28000);
+
         return res.status(400).send({ message: 'É necessário passar o ID de vendas' })
       }
 
@@ -172,11 +242,17 @@ module.exports = {
 
 
       if (!sale) {
-        logger.error("Não existe venda para este ID", 55562)
+       
+        logger.error("Não existe venda para este ID. CodeError: " + 28004)
 
         return res.status(404).send({ message: 'Não existe venda para este ID' })
       }
       const productIdList = sale.products.map(p => p.product_id)
+
+      if(productIdList.length==0) {
+        logger.warn('Não existe produto para esta venda');
+      } 
+
       const productNames = await Product.findAll({
         attributes: ['id', 'name'],
         where: {
@@ -203,9 +279,11 @@ module.exports = {
         products: productsWithName
       }
 
-      return res.status(200).json(response)
+      logger.info('Request: '+ req.url + '  Requisição executada com sucesso! Payload: ' + JSON.stringify(response))         
+       return res.status(200).json(response)
 
     } catch (error) {
+      logger.error(`Desculpe, houve um erro sério, não conseguimos concluir a requisição. Request ${req.url} ${JSON.stringify(error)} . CodeError: ${28002}`)   
       return res.status(500).json(error.message)
     }
   },
@@ -217,6 +295,8 @@ module.exports = {
     const { user_id } = req.params;
 
     try {
+      logger.info(`Iniciando a requisição. Request: ${req.url} `);
+
       const salesData = await User.findAll({
         attributes: ['id', 'name', 'email'],
         include: [
@@ -231,14 +311,16 @@ module.exports = {
       });
 
       if (salesData.length == 0) {
+        logger.warn('No content');
         return res.status(204).json({ message: "no content" });
       }
 
+      logger.info('Request: '+ req.url + ' Requisição executada com sucesso! Payload: ' + JSON.stringify(salesData));
       return res.status(200).json(salesData);
 
     } catch (error) {
-
-      return res.status(201).json({ message: "erro ao listar dados de vendas" });
+      logger.error(`Desculpe, houve um erro sério, não conseguimos concluir a requisição já que não foi possível listar os dados das vendas. Request ${req.url} ${JSON.stringify(error)} . CodeError: ${28022}`);
+      return res.status(404).json({ message: "erro ao listar dados de vendas" });
     }
   },
 
@@ -253,10 +335,13 @@ module.exports = {
             }
     } */
     try {
+      logger.info(`Iniciando a requisição. Request: ${req.url} `);
+
       const { sale_id } = req.params;
       const { address_id, delivery_forecast } = req.body;
 
       if (address_id.length == 0) {
+        logger.warn(`Esta requisição não foi bem sucessida. CodeError: ${28023}`);
         return res.status(400).json({ message: "Bad Request" });
       }
 
@@ -267,6 +352,8 @@ module.exports = {
       });
 
       if (sale.length == 0) {
+        logger.error("id_sale not found. CodeError: " + 28024);
+
         return res.status(404).json({ message: "id_sale not found" });
       }
 
@@ -277,6 +364,7 @@ module.exports = {
       });
 
       if (address.length == 0) {
+        logger.error("address_id not found. CodeError: " + 28025);
         return res.status(404).json({ message: "address_id not found" });
       }
 
@@ -285,6 +373,7 @@ module.exports = {
       const dataForecastParsed = Date.parse(delivery_forecast);
 
       if (dataForecastParsed < dataParsed) {
+        logger.warn(`Esta requisição não foi bem sucessida. CodeError: ${28026}`);
         return res.status(400).json({ message: "Bad request" });
       }
 
@@ -297,6 +386,7 @@ module.exports = {
       });
 
       if (deliveryBooked.length >= 1) {
+        logger.warn(`Já existe um agendamento de entrega para esta venda. CodeError: ${28027}`);
         return res.status(400).json({ message: "Já existe um agendamento de entrega para esta venda" });
       }
 
@@ -305,9 +395,10 @@ module.exports = {
         sale_id: sale_id,
         delivery_forecast: deliverydate
       })
-
+      logger.info('Request: '+ req.url + ' Requisição executada com sucesso! Payload: ' + JSON.stringify(deliveryDateResult));
       return res.status(200).json({ message: "Entrega agendada com sucesso" });
     } catch (error) {
+      logger.error(`Desculpe, houve um erro sério, não conseguimos concluir a requisição. Request ${req.url} ${JSON.stringify(error)} . CodeError: ${28028}`);
       return res.status(400).json({ message: "Bad request" });
     }
 
@@ -336,6 +427,8 @@ module.exports = {
     // #swagger.responses[403] = { description: 'O usuário logado não tem autorização para este recurso.' }
     // #swagger.responses[404] = { description: 'product_id ou seller_id não existe no banco de dados.' }
     try {
+      logger.info(`Iniciando a requisição. Request: ${req.url} `);
+
 
       const { seller_id } = req.params;
       const { product_id } = req.body;
@@ -343,27 +436,35 @@ module.exports = {
       const dt_sale = new Date();
       const buyer = await decode(req.headers.authorization);
       const buyer_id = buyer.userId;
-      console.log(req.body);
+      
       if (!amount) {
         amount = 1;
       }
 
       if (!product_id) {
+        logger.warn(`Tem que enviar product_id. CodeError: ${28029}`);
         return res.status(400).send({ message: "Tem que enviar product_id" });
       }
 
       if (unit_price <= 0 || amount <= 0) {
+        logger.warn(`Unit_price e amount tem que ser maior que 0. CodeError: ${28030}`);
+
         return res
           .status(400)
           .send({ message: "unit_price e amount tem que ser maior que 0" });
       }
       const validProductId = await Product.findByPk(product_id);
+
       if (!validProductId) {
+
+        logger.error("Product_id não existe. CodeError: " + 28031);
+
         return res.status(404).send({ message: "product_id não existe" });
       }
 
       const validSellerId = await User.findByPk(seller_id);
       if (!validSellerId) {
+        logger.error("seller_id não existe. CodeError: " + 28032);
         return res.status(404).send({ message: "seller_id não existe" });
       }
 
@@ -386,8 +487,11 @@ module.exports = {
           amount: amount,
         },
       });
+
+      logger.info('Request: '+ req.url + ' Requisição executada com sucesso! Payload: ' + JSON.stringify(productSale));
       return res.status(201).json({ 'created': "id-" + productSale.id });
     } catch (error) {
+      logger.error(`Desculpe, houve um erro sério, não conseguimos concluir a requisição. Request ${req.url} ${JSON.stringify(error)} . CodeError: ${28033}`);
       return res.status(400).send(error.message);
     }
   },

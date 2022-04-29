@@ -4,6 +4,8 @@ const City = require('../models/City')
 const State = require('../models/State')
 const { validateErrors } = require('../utils/functions')
 const { Op } = require("sequelize");
+const logger = require('../config/logger');
+
 
 module.exports = {
 
@@ -35,6 +37,8 @@ module.exports = {
 
 
     try {
+      logger.info(`Iniciando a requisição. Request: ${req.url} `);
+
       const { city_id, street, cep } = req.query;
 
       const query = {};
@@ -73,6 +77,8 @@ module.exports = {
       });
 
       if (address.length === 0) {
+        logger.warn('Conteúdo vazio');
+
         // #swagger.responses[204] = { description: 'No Content' }
         return res.status(204).send();
       } else {
@@ -80,10 +86,12 @@ module.exports = {
           description: 'Endereço encontrado com sucesso!',
           schema: { $ref: "#/definitions/GetAddress" }
         } */
+        logger.info('Request: '+ req.url + ' Requisição executada com sucesso! Payload: ' + JSON.stringify(adress));
         return res.status(200).json({ message: "Endereço encontrado com sucesso!", address });
       }
     } catch (error) {
       const message = validateErrors(error);
+      logger.error(`Desculpe, houve um erro sério, não conseguimos concluir a requisição. Request ${req.url} ${JSON.stringify(error)} . CodeError: ${29011}`);
       // #swagger.responses[403] = { description: 'Você não tem autorização para este recurso!' }
       return res.status(403).send(message);
     }
@@ -111,18 +119,23 @@ module.exports = {
 
 
     try {
+      logger.info(`Iniciando a requisição. Request: ${req.url} `);
+
       const { address_id } = req.params;
       const { street, number, complement, cep } = req.body;
 
       const address = await Address.findByPk(address_id);
 
       if (!address) {
+        logger.error("Endereço não localizado CodeError: " + 29001);
+
         // #swagger.responses[404] = { description: 'Endereço não localizado!' }
         return res.status(404).json({ message: "Endereço não localizado!" });
       }
 
       if (!street && !number && !complement && !cep) {
         // #swagger.responses[400] = { description: 'É necessário passar pelo menos um dado para alteração!' }
+        logger.error("É necessário passar pelo menos um dado para alteração! CodeError: " + 29002);
 
         return res.status(400).json({ message: "É necessário passar pelo menos um dado para alteração!" });
       }
@@ -142,12 +155,13 @@ module.exports = {
       )
 
       // #swagger.responses[200] = { description: 'Endereço alterado com sucesso!' }
-
+      logger.info('Request: '+ req.url + ' Requisição executada com sucesso! Payload: ' + JSON.stringify(message));
       return res.status(200).json({ message: "Endereço alterado com sucesso!" });
 
     } catch (error) {
       const message = validateErrors(error);
       // #swagger.responses[403] = { description: 'Você não tem autorização para este recurso!' }
+      logger.error(`Desculpe, houve um erro sério, não conseguimos concluir a requisição já que você não tem autorização para este recurso. Request ${req.url} ${JSON.stringify(error)} . CodeError: ${29003}`);
       return res.status(403).send(message);
     }
 
@@ -158,12 +172,15 @@ module.exports = {
     // #swagger.description = 'Endpoint para deletar endereço cadastrado. O id do endereço deve ser enviado por params.'
 
     try {
+      logger.info(`Iniciando a requisição. Request: ${req.url} `);
+
       const { address_id } = req.params;
 
       const address = await Address.findByPk(address_id);
 
       if (!address) {
         //#swagger.responses[404] = {description: 'Not Found'}
+        logger.error("Endreço não encontrado. CodeError: " + 29004);
 
         return res.status(404).send({ message: 'Endreço não encontrado.' });
       }
@@ -176,7 +193,7 @@ module.exports = {
 
       if (deliveryUsing.length > 0) {
         //#swagger.response[400] = {description: 'Bad Request'}
-
+        logger.warn(`Endereço em uso. Não pode ser deletado.. CodeError: ${29004}`);
         return res
           .status(400)
           .send({ message: 'Endereço em uso. Não pode ser deletado.' });
@@ -184,11 +201,14 @@ module.exports = {
 
       await address.destroy();
       console.log('DESTROYED');
+
+      logger.info('Request: '+ req.url + ' Requisição executada com sucesso! Payload: ' + JSON.stringify('DESTROYED'));
       //#swagger.response[204] = {description: 'No Content' }
       return res.status(204).send();
     } catch (error) {
       console.log(error);
       const message = validateErrors(error);
+      logger.error(`Desculpe, houve um erro sério, não conseguimos concluir a requisição. Request ${req.url} ${JSON.stringify(message)} . CodeError: ${29005}`);
       return res.status(400).send({ message: message });
     }
   },
@@ -240,10 +260,14 @@ module.exports = {
    */
 
     try {
+      logger.info(`Iniciando a requisição. Request: ${req.url} `);
+
       const { state_id, city_id } = req.params;
       const addressData = req.body;
 
       if (isNaN(state_id) || isNaN(city_id)) {
+        logger.error("The 'state_id' and 'city_id' params must be integers. CodeError: " + 29006);
+
         return isNaN(state_id) ?
           (
             isNaN(city_id) ? res.status(400).send({ message: "The 'state_id' and 'city_id' params must be integers" })
@@ -259,6 +283,8 @@ module.exports = {
       });
 
       if (state.length === 0) {
+        logger.error("Couldn't find any state with the given 'state_id. CodeError: " + 29007);
+
         return res.status(404).send({ message: "Couldn't find any state with the given 'state_id'" })
       }
 
@@ -267,32 +293,43 @@ module.exports = {
       });
 
       if (city.length === 0) {
+        logger.error("Couldn't find any city with the given 'city_id. CodeError: " + 29008);
+
         return res.status(404).send({ message: "Couldn't find any city with the given 'city_id'" })
       }
       if (city[0].state_id !== state[0].id) {
+        logger.error("The 'city_id' returned a city that doesn't match with the given 'state_id'. CodeError: " + 29009);
+
         return res.status(400).send({ message: "The 'city_id' returned a city that doesn't match with the given 'state_id'" })
       }
       const addressObjKeys = ['street', 'number', 'cep']
       if (addressObjKeys.every(key => key in addressData)) {
         if (typeof addressData.street !== 'string') {
+          logger.error("The 'street' param must be a string. CodeError: " + 29010);
           return res.status(400).send({ message: "The 'street' param must be a string" })
         } else if (addressData.street.length === 0) {
+          logger.error("The 'street' param cannot be empty. CodeError: " + 29011);
           return res.status(400).send({ message: "The 'street' param cannot be empty" })
         }
         if (isNaN(addressData.number)) {
+          logger.error("The 'number' param must be a number. CodeError: " + 29012);
           return res.status(400).send({ message: "The 'number' param must be a number" })
         }
         if (typeof addressData.cep !== 'string') {
+          logger.error("The 'street' param must be a string. CodeError: " + 29013);
           return res.status(400).send({ message: "The 'street' param must be a string" })
         }
         else if (addressData.cep.length < 8 || addressData.cep.length > 9) {
+          logger.error("The 'cep' param is invalid. CodeError: " + 29014);
           return res.status(400).send({ message: "The 'cep' param is invalid" })
         }
         else if (addressData.cep.length === 8 && isNaN(addressData.cep)) {
+          logger.error("The 'cep' param format is invalid. CodeError: " + 29015);
           return res.status(400).send({ message: "The 'cep' param format is invalid" })
         }
         else if (addressData.cep.length === 9) {
           if (addressData.cep[5] !== '-') {
+            logger.error("The 'cep' param format is invalid. CodeError: " + 29016);
             return res.status(400).send({ message: "The 'cep' param format is invalid" })
           } else {
             addressData.cep = addressData.cep.replace('-', '');
@@ -300,6 +337,7 @@ module.exports = {
         }
       }
       else {
+        logger.error("The 'street', 'number' and 'cep' params are required in the req body. CodeError: " + 29017);
         return res.status(400).send({ message: "The 'street', 'number' and 'cep' params are required in the req body" })
       }
 
@@ -323,6 +361,7 @@ module.exports = {
       });
 
       if (checkDuplicate.length) {
+        logger.warn(`"Endereço já existente! Não foi possível adicionar o endereço. CodeError: ${29018}`);
         return res.status(200).send({ message: "Endereço já existente! Não foi possível adicionar o endereço.", address_id: checkDuplicate[0].id });
       }
 
@@ -343,10 +382,13 @@ module.exports = {
         };
 
       const address = await Address.create(newAddress)
+
+      logger.info('Request: '+ req.url + ' Requisição executada com sucesso! Payload: ' + JSON.stringify(address));
       return res.status(201).send({ address_id: address.id });
 
     } catch (error) {
       const message = validateErrors(error);
+      logger.error(`Desculpe, houve um erro sério, não conseguimos concluir a requisição. Request ${req.url} ${JSON.stringify(message)} . CodeError: ${29019}`);
       return res.status(400).send(message);
     }
   },
