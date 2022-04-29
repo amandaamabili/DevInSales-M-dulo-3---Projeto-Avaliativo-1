@@ -2,6 +2,8 @@ const Address = require('../models/Address');
 const Deliveries = require('../models/Deliveries');
 const City = require('../models/City')
 const State = require('../models/State')
+const Tracing = require("@sentry/tracing");
+const Sentry = require("@sentry/node");
 const { validateErrors } = require('../utils/functions')
 const { Op } = require("sequelize");
 const logger = require('../config/logger');
@@ -10,7 +12,7 @@ const logger = require('../config/logger');
 module.exports = {
 
   async index(req, res) {
-    
+
     /*
     #swagger.tags = ['Endereços']
     #swagger.description = 'Endpoint que retorna os endereços com base nos dados fornecidos via query, ou então todos os endereços caso nenhuma query seja passada'
@@ -34,7 +36,10 @@ module.exports = {
              collectionFormat: 'multi',
     }
     */
-
+    const transaction = Sentry.startTransaction({
+      op: "address",
+      name: "Endpoint que retorna os endereços com base nos dados fornecidos via query, ou então todos os endereços caso nenhuma query seja passada",
+    });
 
     try {
       logger.info(`Iniciando a requisição. Request: ${req.url} `);
@@ -77,6 +82,7 @@ module.exports = {
       });
 
       if (address.length === 0) {
+        transaction.finish();
         logger.warn('Conteúdo vazio');
 
         // #swagger.responses[204] = { description: 'No Content' }
@@ -86,10 +92,13 @@ module.exports = {
           description: 'Endereço encontrado com sucesso!',
           schema: { $ref: "#/definitions/GetAddress" }
         } */
-        logger.info('Request: '+ req.url + ' Requisição executada com sucesso! Payload: ' + JSON.stringify(adress));
+        transaction.finish();
+        logger.info('Request: ' + req.url + ' Requisição executada com sucesso! Payload: ' + JSON.stringify(adress));
         return res.status(200).json({ message: "Endereço encontrado com sucesso!", address });
       }
     } catch (error) {
+      Sentry.captureException(error);
+      transaction.finish();
       const message = validateErrors(error);
       logger.error(`Desculpe, houve um erro sério, não conseguimos concluir a requisição. Request ${req.url} ${JSON.stringify(error)} . CodeError: ${29011}`);
       // #swagger.responses[403] = { description: 'Você não tem autorização para este recurso!' }
@@ -97,7 +106,7 @@ module.exports = {
     }
   },
 
-  async update(req,res){
+  async update(req, res) {
 
     /*
     #swagger.tags = ['Endereços']
@@ -116,7 +125,10 @@ module.exports = {
          schema: { $ref: "#/definitions/PatchAddress" }
     }
     */
-
+    const transaction = Sentry.startTransaction({
+      op: "address",
+      name: "Endpoint que faz a alteração de um endereço com base nos dados passados pelo body",
+    });
 
     try {
       logger.info(`Iniciando a requisição. Request: ${req.url} `);
@@ -155,10 +167,13 @@ module.exports = {
       )
 
       // #swagger.responses[200] = { description: 'Endereço alterado com sucesso!' }
-      logger.info('Request: '+ req.url + ' Requisição executada com sucesso! Payload: ' + JSON.stringify(message));
+      transaction.finish();
+      logger.info('Request: ' + req.url + ' Requisição executada com sucesso! Payload: ' + JSON.stringify(message));
       return res.status(200).json({ message: "Endereço alterado com sucesso!" });
 
     } catch (error) {
+      Sentry.captureException(error);
+      transaction.finish();
       const message = validateErrors(error);
       // #swagger.responses[403] = { description: 'Você não tem autorização para este recurso!' }
       logger.error(`Desculpe, houve um erro sério, não conseguimos concluir a requisição já que você não tem autorização para este recurso. Request ${req.url} ${JSON.stringify(error)} . CodeError: ${29003}`);
@@ -170,7 +185,10 @@ module.exports = {
   async delete(req, res) {
     // #swagger.tags = ['Endereços']
     // #swagger.description = 'Endpoint para deletar endereço cadastrado. O id do endereço deve ser enviado por params.'
-
+    const transaction = Sentry.startTransaction({
+      op: "address",
+      name: "Endpoint para deletar endereço cadastrado. O id do endereço deve ser enviado por params",
+    });
     try {
       logger.info(`Iniciando a requisição. Request: ${req.url} `);
 
@@ -202,11 +220,14 @@ module.exports = {
       await address.destroy();
       console.log('DESTROYED');
 
-      logger.info('Request: '+ req.url + ' Requisição executada com sucesso! Payload: ' + JSON.stringify('DESTROYED'));
+      logger.info('Request: ' + req.url + ' Requisição executada com sucesso! Payload: ' + JSON.stringify('DESTROYED'));
       //#swagger.response[204] = {description: 'No Content' }
+      transaction.finish();
       return res.status(204).send();
     } catch (error) {
       console.log(error);
+      Sentry.captureException(error);
+      transaction.finish();
       const message = validateErrors(error);
       logger.error(`Desculpe, houve um erro sério, não conseguimos concluir a requisição. Request ${req.url} ${JSON.stringify(message)} . CodeError: ${29005}`);
       return res.status(400).send({ message: message });
@@ -258,7 +279,10 @@ module.exports = {
        } 
      } 
    */
-
+    const transaction = Sentry.startTransaction({
+      op: "address",
+      name: "Endpoint para adicionar um novo endereço ao banco de dados",
+    });
     try {
       logger.info(`Iniciando a requisição. Request: ${req.url} `);
 
@@ -382,11 +406,14 @@ module.exports = {
         };
 
       const address = await Address.create(newAddress)
+      transaction.finish();
 
-      logger.info('Request: '+ req.url + ' Requisição executada com sucesso! Payload: ' + JSON.stringify(address));
+      logger.info('Request: ' + req.url + ' Requisição executada com sucesso! Payload: ' + JSON.stringify(address));
       return res.status(201).send({ address_id: address.id });
 
     } catch (error) {
+      Sentry.captureException(error);
+      transaction.finish();
       const message = validateErrors(error);
       logger.error(`Desculpe, houve um erro sério, não conseguimos concluir a requisição. Request ${req.url} ${JSON.stringify(message)} . CodeError: ${29019}`);
       return res.status(400).send(message);

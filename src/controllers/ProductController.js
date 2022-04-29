@@ -1,6 +1,8 @@
 const Product = require("../models/Product");
 const { validateErrors } = require("../utils/functions");
 const { Op } = require("sequelize");
+const Tracing = require("@sentry/tracing");
+const Sentry = require("@sentry/node");
 const logger = require('../config/logger');
 
 const {
@@ -13,6 +15,10 @@ const {
 
 module.exports = {
   async index(req, res) {
+    const transaction = Sentry.startTransaction({
+      op: "Product",
+      name: "Endpoint para buscar produtos conforme critério query params. Caso a busca seja feita sem os parâmetros, o endpoint irá retornar todos os produtos cadastrados. Nesse endpoint o usuário deve ter permissão READ.",
+    });
 
     /* #swagger.tags = ['Produto']
     #swagger.description = 'Endpoint para buscar produtos conforme critério query params. Caso a busca seja feita sem os parâmetros, o endpoint irá retornar todos os produtos cadastrados. Nesse endpoint o usuário deve ter permissão READ.'
@@ -45,9 +51,11 @@ module.exports = {
       if (products.length === 0) {
         logger.error("Não existe produto. CodeError: " + 26002);
 
+        transaction.finish();
+
         return res.status(204).send();
       }
-      logger.info('Request: '+ req.url + ' Requisição executada com sucesso! Payload: ' + JSON.stringify(products));
+      logger.info('Request: ' + req.url + ' Requisição executada com sucesso! Payload: ' + JSON.stringify(products));
       return res.status(200).send({ products });
 
       /* #swagger.responses[200] = { 
@@ -56,13 +64,18 @@ module.exports = {
         } */
 
     } catch (error) {
+      Sentry.captureException(error);
+      transaction.finish();
       const message = validateErrors(error);
       logger.error(`Desculpe, houve um erro sério, não conseguimos concluir a requisição. Request ${req.url} ${JSON.stringify(message)} . CodeError: ${26003}`);
       return res.status(400).send(message);
     }
   },
   async store(req, res) {
-
+    const transaction = Sentry.startTransaction({
+      op: "product",
+      name: "Endpoint para criar um novo produto. Nesse endpoint o usuário deve ter permissão WRITE.",
+    });
     /*#swagger.tags = ['Produto']
    #swagger.description = 'Endpoint para criar um novo produto. Nesse endpoint o usuário deve ter permissão WRITE.'
    #swagger.parameters['obj'] = {
@@ -84,7 +97,8 @@ module.exports = {
               schema: { $ref: "#/definitions/ResProduct" },
               description: "Produto criado com sucesso!" 
        } */
-       logger.info('Request: '+ req.url + ' Requisição executada com sucesso! Payload: ' + JSON.stringify(product));
+      transaction.finish();
+      logger.info('Request: ' + req.url + ' Requisição executada com sucesso! Payload: ' + JSON.stringify(product));
       return res.status(200).send({
         message: "Produto criado com sucesso!",
         novoProduto: {
@@ -93,12 +107,19 @@ module.exports = {
         },
       });
     } catch (error) {
+      Sentry.captureException(error);
+      transaction.finish();
       const message = validateErrors(error);
       logger.error(`Desculpe, houve um erro sério, não conseguimos concluir a requisição. Request ${req.url} ${JSON.stringify(message)} . CodeError: ${26004}`);
       return res.status(400).send(message);
     }
   },
   async putUpdate(req, res) {
+
+    const transaction = Sentry.startTransaction({
+      op: "product",
+      name: "Endpoint para atualizar todos as propriedades de um produto. Neste endpoint o usuário logado deve ter permissão de UPDATE.",
+    });
     /*#swagger.tags = ['Produto']
     #swagger.description = 'Endpoint para atualizar todos as propriedades de um produto. Neste endpoint o usuário logado deve ter permissão de UPDATE.'
     #swagger.parameters['product_id'] = {
@@ -148,15 +169,22 @@ module.exports = {
 
         return res.status(404).send({ message: "Produto não encontrado." });
       }
-      logger.info('Request: '+ req.url + ' Requisição executada com sucesso! Payload: ' + JSON.stringify(product));
+      transaction.finish();
+      logger.info('Request: ' + req.url + ' Requisição executada com sucesso! Payload: ' + JSON.stringify(product));
       return res.status(204).send();
     } catch (error) {
+      Sentry.captureException(error);
+      transaction.finish();
       const message = validateErrors(error);
       logger.error(`Desculpe, houve um erro sério, não conseguimos concluir a requisição. Request ${req.url} ${JSON.stringify(message)} . CodeError: ${26009}`);
       return res.status(400).send(message);
     }
   },
   async update(req, res) {
+    const transaction = Sentry.startTransaction({
+      op: "Produto",
+      name: "Endpoint para alterar apenas uma propriedade de um produto, name ou suggested_price. Neste endpoint o usuário logado deve ter permissão de UPDATE.",
+    });
     /* #swagger.tags = ['Produto']
    #swagger.description = 'Endpoint para alterar apenas uma propriedade de um produto, name ou suggested_price. Neste endpoint o usuário logado deve ter permissão de UPDATE.'
    #swagger.parameters['id'] = {
@@ -194,15 +222,22 @@ module.exports = {
           .status(404)
           .send({ message: `Não existe produto com o id ${id}` });
       }
-      logger.info('Request: '+ req.url + ' Requisição executada com sucesso! Payload: ' + JSON.stringify(updatedProduct));
+      transaction.finish();
+      logger.info('Request: ' + req.url + ' Requisição executada com sucesso! Payload: ' + JSON.stringify(updatedProduct));
       return res.status(204).send();
     } catch (error) {
+      Sentry.captureException(error);
+      transaction.finish();
       const message = validateErrors(error);
       logger.error(`Desculpe, houve um erro sério, não conseguimos concluir a requisição. Request ${req.url} ${JSON.stringify(message)} . CodeError: ${26011}`);
       return res.status(400).send(message);
     }
   },
   async delete(req, res) {
+    const transaction = Sentry.startTransaction({
+      op: "Product",
+      name: "Endpoint para deletar um produto, neste endpoint o usuário logado deve ter permissão de DELETE e não pode ser um produto vendido.",
+    });
     /*#swagger.tags = ['Produto']
    #swagger.description = 'Endpoint para deletar um produto, neste endpoint o usuário logado deve ter permissão de DELETE e não pode ser um produto vendido.'
      #swagger.parameters['id'] = {
@@ -229,10 +264,13 @@ module.exports = {
         return res.status(404).send({ message: "Produto não encontrado." });
       }
       await product.destroy();
+      transaction.finish();
 
-      logger.info('Request: '+ req.url + ' Requisição executada com sucesso! Payload: ' + JSON.stringify(product));
+      logger.info('Request: ' + req.url + ' Requisição executada com sucesso! Payload: ' + JSON.stringify(product));
       return res.status(204).send();
     } catch (error) {
+      Sentry.captureException(error);
+      transaction.finish();
       const message = validateErrors(error);
       logger.error(`Desculpe, houve um erro sério, não conseguimos concluir a requisição. Request ${req.url} ${JSON.stringify(message)} . CodeError: ${26013}`);
       return res.status(400).send(message);

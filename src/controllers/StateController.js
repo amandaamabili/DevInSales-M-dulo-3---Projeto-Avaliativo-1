@@ -5,9 +5,15 @@ const { ACCENT, UNNACENT } = require("../utils/constants/accents");
 const logger = require('../config/logger');
 
 const { Op, where, fn, col } = require("sequelize");
+const Tracing = require("@sentry/tracing");
+const Sentry = require("@sentry/node");
 
 module.exports = {
   async index(req, res) {
+    const transaction = Sentry.startTransaction({
+      op: "Estado",
+      name: "Endpoint que retorna os estados com base no nome fornecido via query, ou então todos os estados caso nenhuma query seja passada",
+    });
     /*
       #swagger.tags = ['Estado']
       #swagger.description = 'Endpoint que retorna os estados com base no nome fornecido via query, ou então todos os estados caso nenhuma query seja passada'
@@ -64,7 +70,7 @@ module.exports = {
 
           return res.status(204).send();
         } else {
-          logger.info('Request: '+ req.url + ' Requisição executada com sucesso! Payload: ' + JSON.stringify(filteredStates));
+          logger.info('Request: ' + req.url + ' Requisição executada com sucesso! Payload: ' + JSON.stringify(filteredStates));
           return res.status(200).send(filteredStates);
         }
       }
@@ -77,12 +83,15 @@ module.exports = {
           return res.status(204).send();
         }
         else {
-          logger.info('Request: '+ req.url + ' Requisição executada com sucesso! Payload: ' + JSON.stringify(states));
+          transaction.finish();
+          logger.info('Request: ' + req.url + ' Requisição executada com sucesso! Payload: ' + JSON.stringify(states));
 
           return res.status(200).send({ states });
         }
       }
     } catch (error) {
+      Sentry.captureException(error);
+      transaction.finish();
       const message = validateErrors(error);
       logger.error(`Desculpe, houve um erro sério, não conseguimos concluir a requisição. Request ${req.url} ${JSON.stringify(message)} . CodeError: ${23003}`);
       return res.status(400).send(message);
@@ -90,6 +99,10 @@ module.exports = {
   },
 
   async getStateById(req, res) {
+    const transaction = Sentry.startTransaction({
+      op: "Estado",
+      name: "Endpoint que retorna um estado de acordo com o state_id fornecido",
+    });
     /*
     #swagger.tags = ['Estado']
     #swagger.description = 'Endpoint que retorna um estado de acordo com o state_id fornecido'
@@ -127,9 +140,12 @@ module.exports = {
             message: "Couldn't find any state with the given 'state_id'",
           });
       } else {
+        transaction.finish();
         return res.status(200).send(state[0]);
       }
     } catch (error) {
+      Sentry.captureException(error);
+      transaction.finish();
       const message = validateErrors(error);
       logger.error(`Desculpe, houve um erro sério, não conseguimos concluir a requisição. Request ${req.url} ${JSON.stringify(message)} . CodeError: ${23006}`);
       return res.status(400).send(message);
@@ -137,6 +153,10 @@ module.exports = {
   },
 
   async getCitiesByStateID(req, res) {
+    const transaction = Sentry.startTransaction({
+      op: "Estado",
+      name: "Endpoint para buscar cidade(s) por estado",
+    });
     /* 
    #swagger.tags = ['Estado']
    #swagger.description = 'Endpoint para buscar cidade(s) por estado'
@@ -190,15 +210,22 @@ module.exports = {
         logger.warn('Não existe nenhuma cidade cadastrada');
         return res.status(204).json({});
       }
-      logger.info('Request: '+ req.url + ' Requisição executada com sucesso! Payload: ' + JSON.stringify(cities));
+      transaction.finish();
+      logger.info('Request: ' + req.url + ' Requisição executada com sucesso! Payload: ' + JSON.stringify(cities));
       return res.status(200).json({ cities });
     } catch (error) {
+      Sentry.captureException(error);
+      transaction.finish();
       const message = validateErrors(error);
       logger.error(`Desculpe, houve um erro sério, não conseguimos concluir a requisição. Request ${req.url} ${JSON.stringify(error)} . CodeError: ${23008}`);
       return res.status(400).send(message);
     }
   },
   async postStateIdCity(req, res) {
+    const transaction = Sentry.startTransaction({
+      op: "Estado",
+      name: "'O Endpoint verifica se o Estado já existe e se existe alguma outra cidade criada no Estado com o mesmo nome. Caso não exista, cria-se uma nova Cidade. Nesse endpoint o usuário deve ter permissão WRITE.",
+    });
     // #swagger.tags = ['Estado']
     // #swagger.description = 'O Endpoint verifica se o Estado já existe e se existe alguma outra cidade criada no Estado com o mesmo nome. Caso não exista, cria-se uma nova Cidade. Nesse endpoint o usuário deve ter permissão WRITE.'
     /*#swagger.parameters['state_id'] = {
@@ -232,7 +259,7 @@ module.exports = {
 
       const { state_id } = req.params;
       const { name } = req.body;
-      logger.info('Iniciando a requisição. Request: '+ req.url + '  Body: ' + JSON.stringify(req.body));
+      logger.info('Iniciando a requisição. Request: ' + req.url + '  Body: ' + JSON.stringify(req.body));
 
       const state = await State.findByPk(state_id);
 
@@ -271,10 +298,13 @@ module.exports = {
         name,
         state_id,
       });
+      transaction.finish();
 
-      logger.info('Request: '+ req.url + ' Requisição executada com sucesso! Payload: ' + JSON.stringify(newCity.id));
+      logger.info('Request: ' + req.url + ' Requisição executada com sucesso! Payload: ' + JSON.stringify(newCity.id));
       return res.status(201).send({ city: newCity.id });
     } catch (error) {
+      Sentry.captureException(error);
+      transaction.finish();
       const message = validateErrors(error);
       logger.error(`Desculpe, houve um erro sério, não conseguimos concluir a requisição. Request ${req.url} ${JSON.stringify(message)} . CodeError: ${23011}`);
       return res.status(403).send(message);

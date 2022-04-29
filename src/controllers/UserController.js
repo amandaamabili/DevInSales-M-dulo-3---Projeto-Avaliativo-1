@@ -1,11 +1,17 @@
 const { validateErrors } = require("../utils/functions");
 const UserServices = require("../services/user.service");
+const Tracing = require("@sentry/tracing");
+const Sentry = require("@sentry/node");
 const logger = require('../config/logger');
 
 
 
 module.exports = {
   async create(req, res) {
+    const transaction = Sentry.startTransaction({
+      op: "Usuário",
+      name: "Endpoint que criar um novo usuário.",
+    });
     /*
           #swagger.tags = ['Usuário']
           #swagger.description = 'Endpoint que criar um novo usuário.'
@@ -28,7 +34,7 @@ module.exports = {
         */
     try {
       const { name, password, email, birth_date, roles } = req.body;
-      logger.info('Iniciando a requisição. Request: '+ req.url + '  Body: ' + JSON.stringify(req.body));
+      logger.info('Iniciando a requisição. Request: ' + req.url + '  Body: ' + JSON.stringify(req.body));
 
       const user = await UserServices.createUser(
         name,
@@ -44,10 +50,14 @@ module.exports = {
           }
         }
       */
-        logger.info('Request: '+ req.url + ' Requisição executada com sucesso! Payload: ' + JSON.stringify(user));
-        return res.status(201).send({ response: user });
+      transaction.finish();
+
+      logger.info('Request: ' + req.url + ' Requisição executada com sucesso! Payload: ' + JSON.stringify(user));
+      return res.status(201).send({ response: user });
 
     } catch (error) {
+      Sentry.captureException(error);
+      transaction.finish();
       const message = validateErrors(error);
       /*
               #swagger.responses[400] = {
@@ -56,12 +66,16 @@ module.exports = {
                 }
               }
             */
-             
-       logger.error(`Desculpe, houve um erro sério, não conseguimos concluir a requisição. Request ${req.url} ${JSON.stringify(message)} . CodeError: ${22011}`);
+
+      logger.error(`Desculpe, houve um erro sério, não conseguimos concluir a requisição. Request ${req.url} ${JSON.stringify(message)} . CodeError: ${22011}`);
       return res.status(400).send(message);
     }
   },
   async session(req, res) {
+    const transaction = Sentry.startTransaction({
+      op: "Usuário",
+      name: "Endpoint para login do usuário, quando email e senha são validos retorna um token.",
+    });
     /*
          #swagger.tags = ['Usuário']
          #swagger.description = 'Endpoint para login do usuário, quando email e senha são validos retorna um token.'
@@ -87,7 +101,7 @@ module.exports = {
        */
     try {
       const { email, password } = req.body;
-      logger.info('Iniciando a requisição. Request: '+ req.url + '  Body: ' + JSON.stringify(req.body));
+      logger.info('Iniciando a requisição. Request: ' + req.url + '  Body: ' + JSON.stringify(req.body));
 
       const token = await UserServices.beginSession(email, password);
 
@@ -95,15 +109,22 @@ module.exports = {
         logger.error("Houve um erro na geração do token. CodeError: " + 22012);
         throw new Error(token.error);
       }
-      logger.info('Request: '+ req.url + ' Requisição executada com sucesso! Payload: ' + JSON.stringify(token));
+      transaction.finish();
+      logger.info('Request: ' + req.url + ' Requisição executada com sucesso! Payload: ' + JSON.stringify(token));
       return res.status(201).send({ token: token });
     } catch (error) {
+      Sentry.captureException(error);
+      transaction.finish();
       const message = validateErrors(error);
       logger.error(`Desculpe, houve um erro sério, não conseguimos concluir a requisição. Request ${req.url} ${JSON.stringify(message)} . CodeError: ${22013}`);
       return res.status(400).send(message);
     }
   },
   async index(req, res) {
+    const transaction = Sentry.startTransaction({
+      op: "Usuário",
+      name: "Endpoint para buscar todos os usuários do banco de dados.",
+    });
     /*
           #swagger.tags = ['Usuário']
           #swagger.description = 'Endpoint para buscar todos os usuários do banco de dados.'
@@ -152,9 +173,12 @@ module.exports = {
         }
       }
       */
-      logger.info('Request: '+ req.url + ' Requisição executada com sucesso! Payload: ' + JSON.stringify(users));
+      transaction.finish();
+      logger.info('Request: ' + req.url + ' Requisição executada com sucesso! Payload: ' + JSON.stringify(users));
       return res.status(200).send({ users });
     } catch (error) {
+      Sentry.captureException(error);
+      transaction.finish();
       const message = validateErrors(error);
       /*
        #swagger.responses[400] = {
@@ -163,11 +187,15 @@ module.exports = {
        }
      }
      */
-     logger.error(`Desculpe, houve um erro sério, não conseguimos concluir a requisição. Request ${req.url} ${JSON.stringify(message)} . CodeError: ${22016}`);
+      logger.error(`Desculpe, houve um erro sério, não conseguimos concluir a requisição. Request ${req.url} ${JSON.stringify(message)} . CodeError: ${22016}`);
       return res.status(400).send(message);
     }
   },
   async delete(req, res) {
+    const transaction = Sentry.startTransaction({
+      op: "Usuário",
+      name: "Endpoint para deletar um usuário.",
+    });
     // #swagger.tags = ['Usuário']
     // #swagger.description = 'Endpoint para deletar um usuário.'
     /*
@@ -208,18 +236,21 @@ module.exports = {
 
         throw new Error(message.error);
       }
-      logger.info('Request: '+ req.url + ' Requisição executada com sucesso! Payload: ' + JSON.stringify(message));
+      transaction.finish();
+      logger.info('Request: ' + req.url + ' Requisição executada com sucesso! Payload: ' + JSON.stringify(message));
       return res.status(200).json({ message });
     } catch (error) {
+      Sentry.captureException(error);
+      transaction.finish();
       logger.error(`Desculpe, houve um erro sério, não conseguimos concluir a requisição. Request ${req.url} ${JSON.stringify(error)} . CodeError: ${22019}`);
       return res.status(400).json({ error: error.message });
     }
   },
   // async test(req, res) {
-   
+
   //   try {
   //     const { description } = req.body;
-  
+
 
   //     return res.status(201).send({ description: description });
   //   } catch (error) {
