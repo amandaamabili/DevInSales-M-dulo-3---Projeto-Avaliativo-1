@@ -2,7 +2,6 @@ require("dotenv").config();
 
 const morganMiddleware = require("./middlewares/morgan.middleware");
 const Sentry = require("@sentry/node");
-const Tracing = require("@sentry/tracing");
 
 const express = require('express')
 
@@ -17,11 +16,13 @@ const swaggerUI = require('swagger-ui-express')
 const swaggerFile = require('./swagger.json')
 
 Sentry.init({
-    dsn: "https://b9857876e7754a26a982cadf90ed914a@o1224294.ingest.sentry.io/6369069",
+    dsn: process.env.SENTRY_URL || "",
   
     // Set tracesSampleRate to 1.0 to capture 100%
     // of transactions for performance monitoring.
     // We recommend adjusting this value in production
+    environment: process.env.NODE_ENV || "development",
+    enabled: process.env.SENTRY_ENABLED || false,    
     tracesSampleRate: 1.0,
   });
 
