@@ -29,7 +29,7 @@ async function auth(req) {
   } catch (error) {
     Sentry.captureException(error);
     transaction.finish();
-    logger.error(`Desculpe, houve um erro sério, não conseguimos concluir a requisição. Request ${req.url} ${JSON.stringify(message)} . CodeError: ${22002}`);
+    logger.error(`Desculpe, houve um erro sério, não conseguimos concluir a requisição. Request ${req.url} ${JSON.stringify(error)} . CodeError: ${22002}`);
     return { message: "Você não tem autorização para este recurso." };
   } 
 }

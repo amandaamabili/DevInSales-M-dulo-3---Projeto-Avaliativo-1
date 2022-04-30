@@ -13,5 +13,7 @@ salesRoutes.post('/sales/:sale_id/deliver', onlyCanAccessWith([WRITE]), SaleCont
 salesRoutes.post('/sales/:user_id/buy', onlyCanAccessWith([WRITE]), SaleController.createBuy);
 salesRoutes.post('/sales/:user_id/sale', onlyCanAccessWith([WRITE]), SaleController.createSale);
 salesRoutes.get('/sales/:sale_id', onlyCanAccessWith([READ]), SaleController.showSaleById);
+salesRoutes.get('/sales/product/number-one', SaleController.productMoresold);
+
 
 module.exports = salesRoutes;
