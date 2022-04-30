@@ -2,12 +2,13 @@ const { literal } = require('sequelize');
 const logger = require('../config/logger');
 
 const { decode } = require("jsonwebtoken");
-const { validateErrors, daysToDelivery } = require('../utils/functions');
+const { daysToDelivery } = require('../utils/functions');
 
 const salesRoutes = require('../routes/v1/sales.routes');
 
 const Sale = require('../models/Sale')
 const User = require("../models/User");
+const database = require("../database");
 const ProductsSales = require("../models/ProductsSales");
 const Product = require("../models/Product");
 const Address = require('../models/Address');
@@ -543,4 +544,54 @@ module.exports = {
       return res.status(400).send(error.message);
     }
   },
+
+  async productMoresold(req, res) {
+    // #swagger.auto = false
+    // #swagger.tags = ['Vendas']
+    // #swagger.description = '<h2>Endpoint para retornar produto com o maior número de vendas.</h2>'
+
+    // #swagger.responses[201] = { description: 'Produto com o maior número de vendas encontrado com sucesso.' }
+    // #swagger.responses[500] = { description: 'Há alguma inconsistência no banco.' }
+    const transaction = Sentry.startTransaction({
+      op: "Sale",
+      name: "Produto com maior número de vendas",
+    });
+
+    try {
+      logger.info(`Iniciando a requisição. Request: ${req.url} `);
+      const productMoreSold = await database.query(
+        'SELECT  product_id, count(product_id) FROM public.products_sales group by product_id order by count(product_id)  desc  limit 1;', {
+        type: database.QueryTypes.SELECT
+      })
+
+      if(!productMoreSold || productMoreSold.length === 0){
+        const message = "Não há nenhuma venda realizada"
+        logger.info(message);
+        return  res.status(200).json({message})
+      }
+
+      const product = await Product.findOne({
+        where: {
+          id: productMoreSold[0].product_id,
+        },
+      });
+
+      if(!product){
+        throw Error("Produto não encontrado. Base apresente inconsitência");
+      }
+
+      return res.status(200).json({
+        id: product.id,
+        name: product.name,
+        price: product.suggested_price,
+        amount: productMoreSold[0].count,
+      })
+    } catch (error) {
+      Sentry.captureException(error);
+      transaction.finish();
+      logger.error(`Error:${error} Request ${req.url} ${JSON.stringify(error)} . CodeError: ${28002}`)
+      return res.status(500).json(error.message)
+    }
+  },
+
 };
