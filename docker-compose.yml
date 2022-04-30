@@ -8,11 +8,21 @@ services:
       - POSTGRES_PASSWORD=postgres
     ports:
       - '5434:5432'
-    volumes: 
+    volumes:
       - db:/var/lib/postgresql/data
     networks:
       - app-db-network
-      
+  nginx:
+    image: nginx
+    volumes: 
+    - ./templates:/etc/nginx/templates
+    ports:
+        - "8080:80"
+    networks: 
+        - app-db-network
+    depends_on:
+        - "app"
+
   app:
     build:
       context: ./
