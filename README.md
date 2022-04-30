@@ -5,16 +5,30 @@
 
 <a id="tech"></a>
 
-Este projeto serve para testar os conhecimentos em NodeJS com Express e utilizando Sequelize para trabalhar com banco de dados.
+Este projeto foi refatorado  para avaliar os conhecimentos adquiridos em devOps
+
 ## Tecnologias
 
 O projeto desenvolvido utiliza as seguintes tecnologias:
+- [Docker](https://www.docker.com/) 
+- [Docker-compose](https://docs.docker.com/compose/compose-file/compose-file-v3/) 
+- [Sentry](https://sentry.io/organizations/devinhouse/projects/sales/?project=6369069) 
+- [NgInx](https://hub.docker.com/_/nginx) 
+- [Winston](https://www.npmjs.com/package/winston) 
+- [Morgan](https://www.npmjs.com/package/morgan) 
 - [NodeJS](https://nodejs.org/en/) 
 - [Express](https://expressjs.com/)
 - [Bcrypt](https://github.com/kelektiv/node.bcrypt.js/)
 - [Sequelize](https://sequelize.org/)
 - [Postgres](https://www.postgresql.org/)
 - [Swagger](https://swagger.io/)
+
+## Deploy
+
+- [AWS](https://aws.amazon.com/pt/free/?all-free-tier.sort-by=item.additionalFields.SortRank&all-free-tier.sort-order=asc&awsf.Free%20Tier%20Categories=categories%23compute&trk=a5a8f3c9-c18a-485c-bbdb-52b795178fbe&sc_channel=acquisition&sc_medium=ACQ-P|PS-GO|Brand|Desktop|SU|Compute|EC2|BR|EN|Text&s_kwcid=AL!4422!3!490415521584!e!!g!!aws%20ec2&ef_id=Cj0KCQjwma6TBhDIARIsAOKuANxesoJMRf_8utfWrGNTqPKwy_NRxLrRKB1ty1k5lHavX8_j6-xvyKcaAqexEALw_wcB:G:s&s_kwcid=AL!4422!3!490415521584!e!!g!!aws%20ec2&awsf.Free%20Tier%20Types=*all) 
+- [Heroku](https://senai-dev-in-sales.herokuapp.com/api/v1/docs/)
+- 
+
 
 <a id="settings"></a>
 
